@@ -52,7 +52,7 @@ public class Constants {
     // TODO native2ascii
     public final static String[] DISCARD_CHARS = {"$", "%", ",", "(", ")", "?", "?", "?"};
 
-    public static String DEFAULT_HOST = "secure.gooddata.com";
+    public final static String DEFAULT_HOST = "secure.gooddata.com";
 
     public final static int MAX_TABLE_NAME_LENGTH = 44;
     public final static int MAX_SCHEMA_NAME_LENGTH = 24;

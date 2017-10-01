@@ -47,8 +47,7 @@ public class JdbcConnector {
 		Properties props = new Properties();
 		props.setProperty("user", username);
 		props.setProperty("password", password);
-		Connection conn = driver.connect(jdbcUrl, props);
-		return conn;
+		return driver.connect(jdbcUrl, props);
 	}
 
 	private Driver loadDriver() {

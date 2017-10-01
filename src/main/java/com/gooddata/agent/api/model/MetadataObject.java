@@ -45,6 +45,13 @@
  */
 package com.gooddata.agent.api.model;
 
+import com.gooddata.agent.api.GdcRestApiException;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
+import org.apache.log4j.Logger;
+
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,15 +62,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.sf.json.JSON;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-
-import org.apache.log4j.Logger;
-
-import com.gooddata.agent.api.GdcRestApiException;
-
 /**
  * Represents GoodData metadata object
  *
@@ -72,7 +70,7 @@ import com.gooddata.agent.api.GdcRestApiException;
  */
 public class MetadataObject implements JSON, Map, Comparable {
 
-    private static Logger l = Logger.getLogger(MetadataObject.class);
+    private static final Logger l = Logger.getLogger(MetadataObject.class);
 
     private JSONObject jsonObject = new JSONObject();
 
@@ -93,7 +91,7 @@ public class MetadataObject implements JSON, Map, Comparable {
         List<String> uris = new ArrayList<String>();
         String uri = getUri();
         String content = toString();
-        Pattern p = Pattern.compile("[\\\"\\[]/gdc/md/[^/]*?/obj/[0-9]+?[\\\"\\]/]");
+        Pattern p = Pattern.compile("[\"\\[]/gdc/md/[^/]*?/obj/[0-9]+?[\"\\]/]");
         Matcher m = p.matcher(content);
         while (m.find()) {
             String u = m.group();

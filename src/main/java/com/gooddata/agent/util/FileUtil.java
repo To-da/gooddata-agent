@@ -46,6 +46,10 @@
 
 package com.gooddata.agent.util;
 
+import net.sf.json.JSON;
+import net.sf.json.JSONObject;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -65,20 +69,15 @@ import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import net.sf.json.JSON;
-import net.sf.json.JSONObject;
-
-import org.apache.log4j.Logger;
-
 /**
  * File utils
  *
  * @author zd <zd@gooddata.com>
  * @version 1.0
  */
-public class FileUtil {
+class FileUtil {
 
-    private static Logger l = Logger.getLogger(FileUtil.class);
+    private static final Logger l = Logger.getLogger(FileUtil.class);
 
     private static final int BUF_SIZE = 2048;
 
@@ -96,6 +95,7 @@ public class FileUtil {
             File[] files = d.listFiles();
             byte data[] = new byte[BUF_SIZE];
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(archiveName)));
+//            TODO files can be null + Path can be used
             for (File file : files) {
                 BufferedInputStream fi = new BufferedInputStream(new FileInputStream(file), BUF_SIZE);
                 ZipEntry entry = new ZipEntry(file.getName());
@@ -127,7 +127,7 @@ public class FileUtil {
         }
         try {
             byte[] buf = new byte[1024];
-            int i = 0;
+            int i;
             while ((i = is.read(buf)) != -1) {
                 os.write(buf, 0, i);
             }
@@ -154,11 +154,11 @@ public class FileUtil {
      * {@link #recursiveDelete(File)} to clean this directory up since it isn't
      * deleted automatically
      *
-     * @param root directory where new directory will be created
+     * @param baseDir directory where new directory will be created
      * @return the new directory
      * @throws IOException if there is an error creating the temporary directory
      */
-    public static File createTempDir(String baseDir) throws IOException {
+    private static File createTempDir(String baseDir) throws IOException {
         l.debug("Creating a new tmp directory in " + baseDir);
         final File sysTempDir = new File(baseDir);
         File newTempDir;
@@ -219,7 +219,7 @@ public class FileUtil {
      * @param fileOrDir the file or dir to delete
      * @return true if all files are successfully deleted
      */
-    public static boolean recursiveDelete(File fileOrDir) {
+    private static boolean recursiveDelete(File fileOrDir) {
         l.debug("Deleting " + fileOrDir + " recursively.");
         if (fileOrDir.isDirectory()) {
             // recursively delete contents
@@ -319,9 +319,9 @@ public class FileUtil {
      * @throws IOException
      */
     private static String readStringFromBufferedReader(BufferedReader br) throws IOException {
-        StringBuffer sbr = new StringBuffer();
+        StringBuilder sbr = new StringBuilder();
         for (String ln = br.readLine(); ln != null; ln = br.readLine())
-            sbr.append(ln + "\n");
+            sbr.append(ln).append("\n");
         br.close();
         return sbr.toString();
     }
@@ -348,7 +348,7 @@ public class FileUtil {
      * @return the File
      * @throws IOException if the file doesn't exists and the ignoreMissingFile is false
      */
-    public static File getFile(String fileName, boolean ignoreMissingFile) throws IOException {
+    private static File getFile(String fileName, boolean ignoreMissingFile) throws IOException {
         File f = new File(fileName);
         if (!f.exists()) {
             if (!ignoreMissingFile)
@@ -389,7 +389,7 @@ public class FileUtil {
      * @return UTF8 BufferedReader of the file <tt>path</tt>
      * @throws IOException
      */
-    public static BufferedReader createBufferedUtf8Reader(String path) throws IOException {
+    private static BufferedReader createBufferedUtf8Reader(String path) throws IOException {
         return createBufferedUtf8Reader(new File(path));
     }
 
@@ -401,7 +401,7 @@ public class FileUtil {
      * @return UTF8 BufferedWriter of the file <tt>path</tt>
      * @throws IOException
      */
-    public static BufferedWriter createBufferedUtf8Writer(String path) throws IOException {
+    private static BufferedWriter createBufferedUtf8Writer(String path) throws IOException {
         return createBufferedUtf8Writer(new File(path));
     }
 
@@ -414,7 +414,7 @@ public class FileUtil {
      * @return UTF8 BufferedWriter of the file <tt>path</tt>
      * @throws IOException
      */
-    public static BufferedWriter createBufferedUtf8Writer(String path, boolean append) throws IOException {
+    private static BufferedWriter createBufferedUtf8Writer(String path, boolean append) throws IOException {
         return new BufferedWriter(new FileWriter(path, append));
     }
 
@@ -426,7 +426,7 @@ public class FileUtil {
      * @return UTF8 BufferedReader of the <tt>file</tt>
      * @throws IOException
      */
-    public static BufferedReader createBufferedUtf8Reader(File file) throws IOException {
+    private static BufferedReader createBufferedUtf8Reader(File file) throws IOException {
         return createBufferedUtf8Reader(new FileInputStream(file));
     }
 
@@ -438,7 +438,7 @@ public class FileUtil {
      * @return UTF8 BufferedWriter of the <tt>file</tt>
      * @throws IOException
      */
-    public static BufferedWriter createBufferedUtf8Writer(File file) throws IOException {
+    private static BufferedWriter createBufferedUtf8Writer(File file) throws IOException {
         return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "utf8"));
     }
 
@@ -461,7 +461,7 @@ public class FileUtil {
      * @return UTF8 BufferedReader of the <tt>file</tt>
      * @throws IOException
      */
-    public static BufferedReader createBufferedUtf8Reader(InputStream is) throws IOException {
+    private static BufferedReader createBufferedUtf8Reader(InputStream is) throws IOException {
         return new BufferedReader(new InputStreamReader(is, "utf8"));
     }
 }

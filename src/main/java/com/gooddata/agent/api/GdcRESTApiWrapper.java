@@ -73,8 +73,6 @@ import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.VersionInfo;
 import org.apache.log4j.Logger;
 import org.awaitility.Duration;
 import org.awaitility.core.Function;
@@ -88,6 +86,7 @@ import java.nio.charset.Charset;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -110,6 +109,8 @@ import static org.awaitility.pollinterval.IterativePollInterval.iterative;
  */
 public class GdcRESTApiWrapper {
 
+    private static final String STATUS_ENABLED = "ENABLED";
+    private static final String STATUS_DISABLED = "DISABLED";
     private static Logger l = Logger.getLogger(GdcRESTApiWrapper.class);
 
     /**
@@ -128,36 +129,36 @@ public class GdcRESTApiWrapper {
     private static final String PULL_URI = "/etl/pull";
     private static final String IDENTIFIER_URI = "/identifiers";
     private static final String SLI_DESCRIPTOR_URI = "/descriptor";
-    public static final String MAQL_EXEC_URI = "/ldm/manage";
-    public static final String MAQL_ASYNC_EXEC_URI = "/ldm/manage2";
-    public static final String DML_EXEC_URI = "/dml/manage";
-    public static final String PROJECT_EXPORT_URI = "/maintenance/export";
-    public static final String PROJECT_IMPORT_URI = "/maintenance/import";
-    public static final String PROJECT_PARTIAL_EXPORT_URI = "/maintenance/partialmdexport";
-    public static final String PROJECT_PARTIAL_IMPORT_URI = "/maintenance/partialmdimport";
-    public static final String REPORT_QUERY = "/query/reports";
-    public static final String ATTR_QUERY = "/query/attributes";
-    public static final String EXECUTOR = "/gdc/xtab2/executor3";
-    public static final String EXPORT_EXECUTOR = "/gdc/exporter/executor";
-    public static final String INVITATION_URI = "/invitations";
-    public static final String ETL_MODE_URI = "/etl/mode";
-    public static final String OBJ_URI = "/obj";
-    public static final String ROLES_URI = "/roles";
-    public static final String USERS_URI = "/users";
-    public static final String ETL_MODE_DLI = "DLI";
-    public static final String ETL_MODE_VOID = "VOID";
-    public static final String LINKS_UPLOADS_KEY = "uploads";
+    private static final String MAQL_EXEC_URI = "/ldm/manage";
+    private static final String MAQL_ASYNC_EXEC_URI = "/ldm/manage2";
+    private static final String DML_EXEC_URI = "/dml/manage";
+    private static final String PROJECT_EXPORT_URI = "/maintenance/export";
+    private static final String PROJECT_IMPORT_URI = "/maintenance/import";
+    private static final String PROJECT_PARTIAL_EXPORT_URI = "/maintenance/partialmdexport";
+    private static final String PROJECT_PARTIAL_IMPORT_URI = "/maintenance/partialmdimport";
+    private static final String REPORT_QUERY = "/query/reports";
+    private static final String ATTR_QUERY = "/query/attributes";
+    private static final String EXECUTOR = "/gdc/xtab2/executor3";
+    private static final String EXPORT_EXECUTOR = "/gdc/exporter/executor";
+    private static final String INVITATION_URI = "/invitations";
+    private static final String ETL_MODE_URI = "/etl/mode";
+    private static final String OBJ_URI = "/obj";
+    private static final String ROLES_URI = "/roles";
+    private static final String USERS_URI = "/users";
+    private static final String ETL_MODE_DLI = "DLI";
+    private static final String ETL_MODE_VOID = "VOID";
+    private static final String LINKS_UPLOADS_KEY = "uploads";
 
     public static final String DLI_MANIFEST_FILENAME = "upload_info.json";
 
-    public static final String QUERY_PROJECTDASHBOARDS = "projectdashboards";
-    public static final String QUERY_FOLDERS = "folders";
-    public static final String QUERY_DATASETS = "datasets";
-    public static final String QUERY_DIMENSIONS = "dimensions";
-    public static final String QUERY_PREFIX = "/query/";
+    private static final String QUERY_PROJECTDASHBOARDS = "projectdashboards";
+    private static final String QUERY_FOLDERS = "folders";
+    private static final String QUERY_DATASETS = "datasets";
+    private static final String QUERY_DIMENSIONS = "dimensions";
+    private static final String QUERY_PREFIX = "/query/";
 
-    protected HttpClient client;
-    protected NamePasswordConfiguration config;
+    private HttpClient client;
+    private NamePasswordConfiguration config;
     private JSONObject userLogin = null;
     private JSONObject profile;
     private GoodData gd;
@@ -220,10 +221,9 @@ public class GdcRESTApiWrapper {
             if (profileUri != null && profileUri.length() > 0) {
                 GetMethod gm = createGetMethod(getServerUrl() + profileUri);
                 try {
-                	resp = executeMethodOk(gm);
-                	this.profile = JSONObject.fromObject(resp);
-                }
-                finally {
+                    resp = executeMethodOk(gm);
+                    this.profile = JSONObject.fromObject(resp);
+                } finally {
                     gm.releaseConnection();
                 }
             } else {
@@ -269,6 +269,7 @@ public class GdcRESTApiWrapper {
 
 
     /**
+     * TODO unused
      * GDC logout - remove active session, if any exists
      *
      * @throws HttpMethodException
@@ -287,7 +288,7 @@ public class GdcRESTApiWrapper {
             logoutDelete.releaseConnection();
         }
         this.client = new HttpClient();
-        NetUtil.configureHttpProxy( client );
+        NetUtil.configureHttpProxy(client);
     }
 
     /**
@@ -304,17 +305,16 @@ public class GdcRESTApiWrapper {
         try {
             String resp = executeMethodOk(req);
             JSONObject parsedResp = JSONObject.fromObject(resp);
-            if(parsedResp != null && !parsedResp.isEmpty() && !parsedResp.isNullObject()) {
+            if (parsedResp != null && !parsedResp.isEmpty() && !parsedResp.isNullObject()) {
                 JSONObject project = parsedResp.getJSONObject("project");
-                if(project != null && !project.isEmpty() && !project.isNullObject()) {
+                if (project != null && !project.isEmpty() && !project.isNullObject()) {
                     JSONObject meta = project.getJSONObject("meta");
                     String title = meta.getString("title");
-                    if(title != null && title.length() > 0)
+                    if (title != null && title.length() > 0)
                         return new Project(MD_URI + "/" + id, id, title);
                     else
                         throw new IllegalArgumentException("getProjectById: The project structure doesn't contain the title key.");
-                }
-                else {
+                } else {
                     throw new IllegalArgumentException("getProjectById: The project structure doesn't contain the project key.");
                 }
             } else {
@@ -328,12 +328,11 @@ public class GdcRESTApiWrapper {
         }
     }
 
-   /**
+    /**
      * Returns the global platform links
      *
      * @return accessible platform links
      * @throws com.gooddata.exception.HttpMethodException
-     *
      */
     @SuppressWarnings("unchecked")
     private Iterator<JSONObject> getPlatformLinks() throws HttpMethodException {
@@ -352,31 +351,27 @@ public class GdcRESTApiWrapper {
     }
 
     /**
-     *
-     *
      * @return the WebDav URL from the platform configuration
      */
     public URL getWebDavURL() {
         Iterator<JSONObject> links = getPlatformLinks();
-        while(links.hasNext()) {
+        while (links.hasNext()) {
             JSONObject link = links.next();
-            if(link != null && !link.isEmpty() && !link.isNullObject()) {
+            if (link != null && !link.isEmpty() && !link.isNullObject()) {
                 String category = link.getString("category");
-                if(category != null && category.length() > 0 && category.equalsIgnoreCase(LINKS_UPLOADS_KEY)) {
+                if (category != null && category.length() > 0 && category.equalsIgnoreCase(LINKS_UPLOADS_KEY)) {
                     try {
                         String uri = link.getString("link");
-                        if(uri != null && uri.length()>0) {
-                            if(uri.startsWith("/")) {
+                        if (uri != null && uri.length() > 0) {
+                            if (uri.startsWith("/")) {
                                 uri = getServerUrl() + uri;
                             }
                             return new URL(uri);
+                        } else {
+                            throw new IllegalArgumentException("No uploads URL configured for the server: " + category);
                         }
-                        else {
-                            throw new IllegalArgumentException("No uploads URL configured for the server: "+category);
-                        }
-                    }
-                    catch (MalformedURLException e) {
-                        throw new IllegalArgumentException("Invalid uploads URL configured for the server: "+category);
+                    } catch (MalformedURLException e) {
+                        throw new IllegalArgumentException("Invalid uploads URL configured for the server: " + category);
                     }
                 }
             }
@@ -392,7 +387,7 @@ public class GdcRESTApiWrapper {
      * @throws HttpMethodException       if there is a communication error
      * @throws GdcProjectAccessException if the SLI doesn't exist
      */
-    public List<SLI> getSLIs(String projectId) throws HttpMethodException, GdcProjectAccessException {
+    private List<SLI> getSLIs(String projectId) throws HttpMethodException, GdcProjectAccessException {
         l.debug("Getting SLIs from project id=" + projectId);
         List<SLI> list = new ArrayList<SLI>();
         String ifcUri = getSLIsUri(projectId);
@@ -540,7 +535,7 @@ public class GdcRESTApiWrapper {
      * @return the SLI
      * @throws GdcProjectAccessException if the SLI doesn't exist
      */
-    public static SLI getSLIById(String id, List<SLI> slis, String projectId) throws GdcProjectAccessException {
+    private static SLI getSLIById(String id, List<SLI> slis, String projectId) throws GdcProjectAccessException {
         l.debug("Get SLI by id=" + id + " project id=" + projectId);
         for (SLI sli : slis) {
             if (id.equals(sli.getId())) {
@@ -910,8 +905,8 @@ public class GdcRESTApiWrapper {
                 l.debug("computeMetric: Waiting for DataResult");
                 try {
                     Thread.sleep(Constants.POLL_INTERVAL);
-                } catch (InterruptedException ex) {
-                    // do nothing
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }
@@ -1027,8 +1022,8 @@ public class GdcRESTApiWrapper {
                 l.debug("computeReport: Waiting for DataResult");
                 try {
                     Thread.sleep(Constants.POLL_INTERVAL);
-                } catch (InterruptedException ex) {
-                    // do nothing
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }
@@ -1042,7 +1037,7 @@ public class GdcRESTApiWrapper {
      *
      * @param reportDefUri report definition to execute
      */
-    public String executeReportDefinition(String reportDefUri) {
+    private String executeReportDefinition(String reportDefUri) {
         l.debug("Executing report definition uri=" + reportDefUri);
         PostMethod execPost = createPostMethod(getServerUrl() + EXECUTOR);
         JSONObject execDef = new JSONObject();
@@ -1067,7 +1062,7 @@ public class GdcRESTApiWrapper {
                             "Returned invalid result result=" + tr);
                 }
                 String dataResult = reportResult.getString("dataResult");
-                if (dataResult == null || dataResult.length()<=0) {
+                if (dataResult == null || dataResult.length() <= 0) {
                     l.debug("Executing report definition uri=" + reportDefUri + " failed. Returned invalid result result=" + tr);
                     throw new GdcRestApiException("Executing report definition uri=" + reportDefUri + " failed. " +
                             "Returned invalid result result=" + tr);
@@ -1089,10 +1084,10 @@ public class GdcRESTApiWrapper {
     /**
      * Report to execute.
      *
-     * @return JSON representation of the report result (the "execResult" object including the "execResult" root key)
      * @param reportUri report definition to execute
+     * @return JSON representation of the report result (the "execResult" object including the "execResult" root key)
      */
-    public JSONObject executeReport(String reportUri) {
+    private JSONObject executeReport(String reportUri) {
         l.debug("Executing report uri=" + reportUri);
         PostMethod execPost = createPostMethod(getServerUrl() + EXECUTOR);
         JSONObject execDef = new JSONObject();
@@ -1118,7 +1113,7 @@ public class GdcRESTApiWrapper {
                             "Returned invalid result result=" + tr);
                 }
                 String dataResult = reportResult.getString("dataResult");
-                if (dataResult == null || dataResult.length()<=0) {
+                if (dataResult == null || dataResult.length() <= 0) {
                     l.debug("Executing report uri=" + reportUri + " failed. Returned invalid dataResult=" + tr);
                     throw new GdcRestApiException("Executing report uri=" + reportUri + " failed. " +
                             "Returned invalid dataResult=" + tr);
@@ -1141,10 +1136,10 @@ public class GdcRESTApiWrapper {
      * Export a report result
      *
      * @param execResult object returned by the {@link #executeReport(String)} method
-     * @param format    export format (pdf | xls | png | csv)
+     * @param format     export format (pdf | xls | png | csv)
      */
     public byte[] exportReportResult(JSONObject execResult, String format) {
-    	String resultUri = execResult.getJSONObject("execResult").getString("dataResult");
+        String resultUri = execResult.getJSONObject("execResult").getString("dataResult");
         l.debug("Exporting report result uri=" + resultUri);
         PostMethod execPost = createPostMethod(getServerUrl() + EXPORT_EXECUTOR);
         JSONObject execDef = new JSONObject();
@@ -1191,7 +1186,7 @@ public class GdcRESTApiWrapper {
      * @param uri the export result
      * @return attribute object
      */
-    public byte[] getReportResult(String uri) {
+    private byte[] getReportResult(String uri) {
         l.debug("Retrieving export result uri=" + uri);
         byte[] buf = null;
         String qUri = getServerUrl() + uri;
@@ -1206,8 +1201,8 @@ public class GdcRESTApiWrapper {
                 l.debug("Waiting for exporter to finish.");
                 try {
                     Thread.currentThread().sleep(Constants.POLL_INTERVAL);
-                } catch (InterruptedException ex) {
-                    // do nothing
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
             } catch (IOException e) {
                 l.debug("Network error during the report result export.", e);
@@ -1233,7 +1228,7 @@ public class GdcRESTApiWrapper {
         JSONObject pullStructure = getPullStructure(remoteDir);
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(pullStructure.toString().getBytes()));
         pullPost.setRequestEntity(request);
-        String taskLink = null;
+        String taskLink;
         try {
             String response = executeMethodOk(pullPost);
             JSONObject responseObject = JSONObject.fromObject(response);
@@ -1287,19 +1282,19 @@ public class GdcRESTApiWrapper {
      * @param name        project name
      * @param desc        project description
      * @param templateUri project template uri
-     * @param driver underlying database driver
+     * @param driver      underlying database driver
      * @param accessToken access token
      * @return the project Id
      * @throws GdcRestApiException
      */
-    public String createProject(String name, String desc, String templateUri, String driver, String accessToken) throws GdcRestApiException {
+    private String createProject(String name, String desc, String templateUri, String driver, String accessToken) throws GdcRestApiException {
         l.debug("Creating project name=" + name);
         PostMethod createProjectPost = createPostMethod(getServerUrl() + PROJECTS_URI);
         JSONObject createProjectStructure = getCreateProject(name, desc, templateUri, driver, accessToken);
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                 createProjectStructure.toString().getBytes()));
         createProjectPost.setRequestEntity(request);
-        String uri = null;
+        String uri;
         try {
             String response = executeMethodOk(createProjectPost);
             JSONObject responseObject = JSONObject.fromObject(response);
@@ -1326,7 +1321,7 @@ public class GdcRESTApiWrapper {
      * @param name        project name
      * @param desc        project description
      * @param templateUri project template uri
-     * @param driver underlying database driver
+     * @param driver      underlying database driver
      * @param accessToken access token
      * @return the create project JSON structure
      */
@@ -1340,10 +1335,10 @@ public class GdcRESTApiWrapper {
         JSONObject content = new JSONObject();
         //content.put("state", "ENABLED");
         content.put("guidedNavigation", "1");
-        if(driver != null && driver.length()>0) {
+        if (driver != null && driver.length() > 0) {
             content.put("driver", driver);
         }
-        if(accessToken != null && accessToken.length()>0) {
+        if (accessToken != null && accessToken.length() > 0) {
             content.put("authorizationToken", accessToken);
         }
         JSONObject project = new JSONObject();
@@ -1369,8 +1364,7 @@ public class GdcRESTApiWrapper {
             JSONObject parsedResp = JSONObject.fromObject(resp);
             JSONObject project = parsedResp.getJSONObject("project");
             JSONObject content = project.getJSONObject("content");
-            String state = content.getString("state");
-            return state;
+            return content.getString("state");
         } catch (HttpMethodException e) {
             l.debug("The project id=" + id + " doesn't exists.");
             throw new GdcProjectAccessException("The project id=" + id + " doesn't exists.");
@@ -1387,7 +1381,7 @@ public class GdcRESTApiWrapper {
      */
     public void dropProject(String projectId) throws GdcRestApiException {
         l.debug("Dropping project id=" + projectId);
-        DeleteMethod dropProjectDelete = createDeleteMethod(getServerUrl() + PROJECTS_URI + "/"+projectId);
+        DeleteMethod dropProjectDelete = createDeleteMethod(getServerUrl() + PROJECTS_URI + "/" + projectId);
         try {
             executeMethodOk(dropProjectDelete);
         } catch (HttpMethodException ex) {
@@ -1406,7 +1400,7 @@ public class GdcRESTApiWrapper {
      * @return project id
      * @throws GdcRestApiException in case the project doesn't exist
      */
-    protected String getProjectId(String uri) throws GdcRestApiException {
+    private String getProjectId(String uri) throws GdcRestApiException {
         l.debug("Getting project id by uri=" + uri);
         if (uri != null && uri.length() > 0) {
             String[] cs = uri.split("/");
@@ -1469,16 +1463,16 @@ public class GdcRESTApiWrapper {
             JSONObject responseObject = JSONObject.fromObject(response);
             JSONArray uris = responseObject.getJSONArray("entries");
             String taskmanUri = "";
-            for(Object ouri : uris) {
-                JSONObject uri = (JSONObject)ouri;
+            for (Object ouri : uris) {
+                JSONObject uri = (JSONObject) ouri;
                 String category = uri.getString("category");
-                if(category.equals("tasks-status")) {
+                if (category.equals("tasks-status")) {
                     taskmanUri = uri.getString("link");
                 }
             }
-            if(taskmanUri != null && taskmanUri.length()>0) {
+            if (taskmanUri != null && taskmanUri.length() > 0) {
                 l.debug("Checking async MAQL DDL execution status.");
-                TaskmanStatus status = new TaskmanStatus("",new String[]{});
+                TaskmanStatus status = new TaskmanStatus("", new String[]{});
                 while (!"OK".equalsIgnoreCase(status.getStatus()) && !"ERROR".equalsIgnoreCase(status.getStatus()) &&
                         !"WARNING".equalsIgnoreCase(status.getStatus())) {
                     status = getDetailedTaskManStatus(taskmanUri);
@@ -1488,19 +1482,19 @@ public class GdcRESTApiWrapper {
                 l.info("Async MAQL DDL finished with status " + status.getStatus());
                 if (!("OK".equalsIgnoreCase(status.getStatus()) || "WARNING".equalsIgnoreCase(status.getStatus()))) {
                     String[] messages = status.getMessage();
-                    String message = "";
-                    for(String msg : messages) {
-                        if(message.length()>0) message += "\n";
-                        message += msg;
+                    StringBuilder message = new StringBuilder();
+                    for (String msg : messages) {
+                        if (message.length() > 0) message.append("\n");
+                        message.append(msg);
                     }
-                    throw new GdcRestApiException("Async MAQL execution failed with status "+status.getStatus() +
-                            ". Errors: "+message);
+                    throw new GdcRestApiException("Async MAQL execution failed with status " + status.getStatus() +
+                            ". Errors: " + message);
                 }
             }
         } catch (HttpMethodException ex) {
             l.debug("MAQL execution: ", ex);
             throw new GdcRestApiException("MAQL execution: " + ex.getMessage(), ex);
-        }  catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             throw new InternalErrorException(e);
         } finally {
             maqlPost.releaseConnection();
@@ -1541,13 +1535,13 @@ public class GdcRESTApiWrapper {
     public ProjectExportResult exportProject(String projectId, boolean exportUsers, boolean exportData, String[] authorizedUsers)
             throws GdcRestApiException {
         l.debug("Exporting project projectId=" + projectId + " users:" + exportUsers + " data:" + exportData + " authorized users:" +
-                authorizedUsers);
+                Arrays.toString(authorizedUsers));
         PostMethod req = createPostMethod(getProjectMdUrl(projectId) + PROJECT_EXPORT_URI);
         JSONObject param = getProjectExportStructure(exportUsers, exportData, authorizedUsers);
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                 param.toString().getBytes()));
         req.setRequestEntity(request);
-        ProjectExportResult result = null;
+        ProjectExportResult result;
         try {
             String response = executeMethodOk(req);
             result = new ProjectExportResult();
@@ -1581,7 +1575,7 @@ public class GdcRESTApiWrapper {
 
     private GdcRole getRoleFromUri(String roleUri) {
         l.debug("Getting role from uri: " + roleUri);
-        HttpMethod req = createGetMethod( getServerUrl() + roleUri);
+        HttpMethod req = createGetMethod(getServerUrl() + roleUri);
         try {
             String resp = executeMethodOk(req);
             JSONObject parsedResp = JSONObject.fromObject(resp);
@@ -1600,7 +1594,7 @@ public class GdcRESTApiWrapper {
 
     private GdcUser getUserFromUri(String userUri) {
         l.debug("Getting user from uri: " + userUri);
-        HttpMethod req = createGetMethod( getServerUrl() + userUri);
+        HttpMethod req = createGetMethod(getServerUrl() + userUri);
         try {
             String resp = executeMethodOk(req);
             JSONObject parsedResp = JSONObject.fromObject(resp);
@@ -1617,7 +1611,7 @@ public class GdcRESTApiWrapper {
         }
     }
 
-    public static class GdcRole{
+    public static class GdcRole {
 
         private String name;
         private String identifier;
@@ -1651,7 +1645,7 @@ public class GdcRESTApiWrapper {
             if (u == null || u.trim().length() <= 0) {
                 throw new GdcRestApiException("Can't extract role from JSON. No roleUsers key in the JSON.");
             }
-            this.setUri(u.replace(USERS_URI,""));
+            this.setUri(u.replace(USERS_URI, ""));
             String i = m.getString("identifier");
             if (i == null || i.trim().length() <= 0) {
                 throw new GdcRestApiException("Can't extract user from JSON. No email key in the JSON.");
@@ -1685,9 +1679,7 @@ public class GdcRESTApiWrapper {
         }
 
         public boolean validate() {
-            if (getName() != null && getIdentifier().length() > 0 && getUri() != null) // email is not mandatory
-                return true;
-            return false;
+            return getName() != null && getIdentifier().length() > 0 && getUri() != null;
         }
     }
 
@@ -1762,13 +1754,11 @@ public class GdcRESTApiWrapper {
         }
 
         public boolean validate() {
-            if (getLogin() != null && getLogin().length() > 0 && getPassword() != null
+            return getLogin() != null && getLogin().length() > 0 && getPassword() != null
                     && getPassword().length() > 0 && getVerifyPassword() != null
                     && getVerifyPassword().length() > 0 && getFirstName() != null
                     && getFirstName().length() > 0 && getLastName() != null
-                    && getLastName().length() > 0) // email is not mandatory
-                return true;
-            return false;
+                    && getLastName().length() > 0;
         }
 
         public String getLogin() {
@@ -1884,22 +1874,22 @@ public class GdcRESTApiWrapper {
             this.ssoProvider = ssoProvider;
         }
 
-		public String getEmail() {
-			return email;
-		}
+        public String getEmail() {
+            return email;
+        }
 
-		public void setEmail(String email) {
-			this.email = email;
-		}
-		
-		@Override
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        @Override
         public String toString() {
             return "DWGdcUser [getLogin()=" + getLogin() + ", getUri()=" + getUri() + ", getStatus()=" + getStatus()
-                + ", getLicence()=" + getLicence() + ", getFirstName()=" + getFirstName() + ", getLastName()="
-                + getLastName() + ", getCompanyName()=" + getCompanyName() + ", getPosition()=" + getPosition()
-                + ", getTimezone()=" + getTimezone() + ", getCountry()=" + getCountry() + ", getPhoneNumber()="
-                + getPhoneNumber() + ", getPassword()=" + getPassword() + ", getVerifyPassword()="
-                + getVerifyPassword() + ", getEmail()=" + getEmail() + "," +  " getSsoProvider()=" + getSsoProvider() + "]";
+                    + ", getLicence()=" + getLicence() + ", getFirstName()=" + getFirstName() + ", getLastName()="
+                    + getLastName() + ", getCompanyName()=" + getCompanyName() + ", getPosition()=" + getPosition()
+                    + ", getTimezone()=" + getTimezone() + ", getCountry()=" + getCountry() + ", getPhoneNumber()="
+                    + getPhoneNumber() + ", getPassword()=" + getPassword() + ", getVerifyPassword()="
+                    + getVerifyPassword() + ", getEmail()=" + getEmail() + "," + " getSsoProvider()=" + getSsoProvider() + "]";
         }
 
     }
@@ -1921,7 +1911,7 @@ public class GdcRESTApiWrapper {
             InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                     param.toString().getBytes()));
             req.setRequestEntity(request);
-            String result = null;
+            String result;
             try {
                 String response = executeMethodOk(req);
                 JSONObject responseObject = JSONObject.fromObject(response);
@@ -1973,14 +1963,14 @@ public class GdcRESTApiWrapper {
 
         // for backward compatibility
 
-        if(ROLES.containsKey(role.toUpperCase()))  {
+        if (ROLES.containsKey(role.toUpperCase())) {
             role = ROLES.get(role.toUpperCase());
         }
 
         List<GdcRole> roles = getProjectRoles(projectId);
-        for(GdcRole r : roles) {
+        for (GdcRole r : roles) {
             String identifier = r.getIdentifier();
-            if(identifier.equalsIgnoreCase(role)) {
+            if (identifier.equalsIgnoreCase(role)) {
                 roleUri = r.getUri();
             }
         }
@@ -1999,7 +1989,7 @@ public class GdcRESTApiWrapper {
     public void addUsersToProject(String projectId, List<String> uris, String role)
             throws GdcRestApiException {
 
-        l.debug("Adding users " + uris + " to project " + projectId + " in role "+ role);
+        l.debug("Adding users " + uris + " to project " + projectId + " in role " + role);
         String projectsUrl = getProjectUrl(projectId);
 
         String roleUri = getRoleUri(projectId, role);
@@ -2007,10 +1997,10 @@ public class GdcRESTApiWrapper {
         addUsersToProjectWithRoleUri(projectId, uris, roleUri);
     }
 
-    public void addUsersToProjectWithRoleUri(String projectId, List<String> uris, String roleUri)
+    private void addUsersToProjectWithRoleUri(String projectId, List<String> uris, String roleUri)
             throws GdcRestApiException {
 
-        l.debug("Adding users " + uris + " to project " + projectId + " with roleUri "+ roleUri);
+        l.debug("Adding users " + uris + " to project " + projectId + " with roleUri " + roleUri);
         String projectsUrl = getProjectUrl(projectId);
 
         PostMethod req = createPostMethod(projectsUrl + PROJECT_USERS_SUFFIX);
@@ -2018,7 +2008,6 @@ public class GdcRESTApiWrapper {
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                 param.toString().getBytes()));
         req.setRequestEntity(request);
-        String result = null;
         try {
             String response = executeMethodOk(req);
             JSONObject responseObject = JSONObject.fromObject(response);
@@ -2026,6 +2015,7 @@ public class GdcRESTApiWrapper {
             JSONArray failed = projectUsersUpdateResult.getJSONArray("failed");
             if (!failed.isEmpty()) {
                 String errMsg = "Following users can't be added to the project:";
+//                TODO "uri" is not used in iteration
                 for (Object uri : failed.toArray()) {
                     errMsg += " " + uris.toString();
                 }
@@ -2054,7 +2044,7 @@ public class GdcRESTApiWrapper {
             JSONObject content = new JSONObject();
             if (roles != null)
                 content.put("userRoles", roles);
-            content.put("status", "ENABLED");
+            content.put("status", STATUS_ENABLED);
             user.put("content", content);
             JSONObject links = new JSONObject();
             links.put("self", uri);
@@ -2093,6 +2083,7 @@ public class GdcRESTApiWrapper {
             JSONArray failed = projectUsersUpdateResult.getJSONArray("failed");
             if (!failed.isEmpty()) {
                 String errMsg = "Following users can't be disabled in the project:";
+//                TODO "uri" is not used in iteration
                 for (Object uri : failed.toArray()) {
                     errMsg += " " + uris.toString();
                 }
@@ -2114,7 +2105,7 @@ public class GdcRESTApiWrapper {
         for (String uri : uris) {
             JSONObject user = new JSONObject();
             JSONObject content = new JSONObject();
-            content.put("status", "DISABLED");
+            content.put("status", STATUS_DISABLED);
             user.put("content", content);
             JSONObject links = new JSONObject();
             links.put("self", uri);
@@ -2130,10 +2121,10 @@ public class GdcRESTApiWrapper {
     /**
      * Returns the selected project's roles
      *
-     * @param pid             project ID
+     * @param pid project ID
      * @return array of the project's users
      */
-    public ArrayList<GdcRole> getProjectRoles(String pid) {
+    private ArrayList<GdcRole> getProjectRoles(String pid) {
         ArrayList<GdcRole> ret = new ArrayList<GdcRole>();
         l.debug("Executing getProjectRoles for project id=" + pid);
         HttpMethod req = createGetMethod(getProjectUrl(pid) + ROLES_URI);
@@ -2157,6 +2148,7 @@ public class GdcRESTApiWrapper {
             for (Object o : roles) {
                 String role = (String) o;
                 GdcRole g = getRoleFromUri(role);
+//                TODO not necessary to do? : g.validate()
                 ret.add(g);
             }
             return ret;
@@ -2166,7 +2158,6 @@ public class GdcRESTApiWrapper {
     }
 
 
-
     /**
      * Returns the selected project's roles
      *
@@ -2174,12 +2165,12 @@ public class GdcRESTApiWrapper {
      */
     public ArrayList<String> getRoleUsers(GdcRole role, boolean activeUsersOnly) {
         ArrayList<String> ret = new ArrayList<String>();
-        if(role == null || role.getIdentifier() == null || role.getIdentifier().length() == 0 || role.getUri() == null
+        if (role == null || role.getIdentifier() == null || role.getIdentifier().length() == 0 || role.getUri() == null
                 || role.getUri().length() == 0 || role.getName() == null || role.getName().length() == 0) {
             l.debug("Can't getRoleUsers . Invalid role object passed.");
             throw new GdcRestApiException("Can't getRoleUsers. Invalid role object passed.");
         }
-        l.debug("Executing getRoleUsers for role "+role.getIdentifier());
+        l.debug("Executing getRoleUsers for role " + role.getIdentifier());
         HttpMethod req = createGetMethod(getServerUrl() + role.getUri() + USERS_URI);
         try {
             String resp = executeMethodOk(req);
@@ -2234,7 +2225,7 @@ public class GdcRESTApiWrapper {
             for (Object o : users) {
                 JSONObject user = (JSONObject) o;
                 GdcUser g = new GdcUser(user);
-                if ((activeUsersOnly && "ENABLED".equalsIgnoreCase(g.getStatus())) || (!activeUsersOnly)) {
+                if (!activeUsersOnly || STATUS_ENABLED.equalsIgnoreCase(g.getStatus())) {
                     ret.add(g);
                 }
             }
@@ -2261,7 +2252,7 @@ public class GdcRESTApiWrapper {
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                 param.toString().getBytes()));
         req.setRequestEntity(request);
-        String result = null;
+        String result;
         try {
             String response = executeMethodOk(req);
             JSONObject responseObject = JSONObject.fromObject(response);
@@ -2302,7 +2293,7 @@ public class GdcRESTApiWrapper {
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                 param.toString().getBytes()));
         req.setRequestEntity(request);
-        String result = null;
+        String result;
         try {
             String response = executeMethodOk(req);
             JSONObject responseObject = JSONObject.fromObject(response);
@@ -2342,7 +2333,7 @@ public class GdcRESTApiWrapper {
         InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(
                 param.toString().getBytes()));
         req.setRequestEntity(request);
-        ProjectExportResult result = null;
+        ProjectExportResult result;
         try {
             String response = executeMethodOk(req);
             result = new ProjectExportResult();
@@ -2399,30 +2390,29 @@ public class GdcRESTApiWrapper {
         }
     }
 
-    public GraphExecutionResult executeGraph(String processUri, String graph, Map<String,String> params) throws GdcRestApiException {
-       return executeGraph(processUri, graph, params, null);
+    public GraphExecutionResult executeGraph(String processUri, String graph, Map<String, String> params) throws GdcRestApiException {
+        return executeGraph(processUri, graph, params, null);
     }
 
 
-    public GraphExecutionResult executeGraph(String processUri, String graph, Map<String,String> params, Map<String,String> hiddenParams) throws GdcRestApiException {
+    public GraphExecutionResult executeGraph(String processUri, String graph, Map<String, String> params, Map<String, String> hiddenParams) throws GdcRestApiException {
         return executeGraph(processUri, graph, params, hiddenParams, Duration.TEN_SECONDS, new Duration(15, TimeUnit.HOURS));
     }
 
     /**
-     * @see <a href="https://developer.gooddata.com/api#/reference/data-integration/manage-a-data-loading-process/execute-a-process">https://developer.gooddata.com/api#/reference/data-integration/manage-a-data-loading-process/execute-a-process</a>
-     *
-     * Polls for graph result with iterative poll interval, but maximum delay is two minutes
-     *
-     * @param processUri uri of process which should be executed
-     * @param graph graph path
-     * @param params execution params
+     * @param processUri   uri of process which should be executed
+     * @param graph        graph path
+     * @param params       execution params
      * @param hiddenParams sensitive execution params
      * @param initialDelay initial polling delay
-     * @param timeout polling timeout
+     * @param timeout      polling timeout
      * @return result {@link GraphExecutionResult}
      * @throws GdcRestApiException
+     * @see <a href="https://developer.gooddata.com/api#/reference/data-integration/manage-a-data-loading-process/execute-a-process">https://developer.gooddata.com/api#/reference/data-integration/manage-a-data-loading-process/execute-a-process</a>
+     * <p>
+     * Polls for graph result with iterative poll interval, but maximum delay is two minutes
      */
-    public GraphExecutionResult executeGraph(String processUri, String graph, Map<String,String> params, Map<String,String> hiddenParams, Duration initialDelay, Duration timeout) throws GdcRestApiException {
+    private GraphExecutionResult executeGraph(String processUri, String graph, Map<String, String> params, Map<String, String> hiddenParams, Duration initialDelay, Duration timeout) throws GdcRestApiException {
         l.debug("Executing Graph processUri=" + processUri + " graph = " + graph);
         if (hiddenParams == null) {
             hiddenParams = new HashMap<String, String>();
@@ -2461,14 +2451,14 @@ public class GdcRESTApiWrapper {
     }
 
 
-        /**
-         * Executes the MAQL and creates/modifies the project's LDM
-         *
-         * @param projectId the project's ID
-         * @param maql      String with the MAQL statements
-         * @return result String
-         * @throws GdcRestApiException
-         */
+    /**
+     * Executes the MAQL and creates/modifies the project's LDM
+     *
+     * @param projectId the project's ID
+     * @param maql      String with the MAQL statements
+     * @return result String
+     * @throws GdcRestApiException
+     */
     public String executeDML(String projectId, String maql) throws GdcRestApiException {
         l.debug("Executing MAQL DML projectId=" + projectId + " MAQL DML:\n" + maql);
         PostMethod maqlPost = createPostMethod(getProjectMdUrl(projectId) + DML_EXEC_URI);
@@ -2480,8 +2470,7 @@ public class GdcRESTApiWrapper {
         try {
             String response = executeMethodOk(maqlPost);
             JSONObject responseObject = JSONObject.fromObject(response);
-            String uris = responseObject.getString("uri");
-            return uris;
+            return responseObject.getString("uri");
         } catch (HttpMethodException ex) {
             l.debug("MAQL DML execution: ", ex);
             throw new GdcRestApiException("MAQL DML execution: ", ex);
@@ -2505,19 +2494,19 @@ public class GdcRESTApiWrapper {
         return maqlStructure;
     }
 
-    private JSONObject getEtlParamsStructure(Map<String,String> params) {
-      JSONObject paramsStructure = new JSONObject();
-      for (Map.Entry<String, String> entry : params.entrySet()) {
-         paramsStructure.put(entry.getKey(), entry.getValue());
-      }
-      return paramsStructure;
+    private JSONObject getEtlParamsStructure(Map<String, String> params) {
+        JSONObject paramsStructure = new JSONObject();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            paramsStructure.put(entry.getKey(), entry.getValue());
+        }
+        return paramsStructure;
     }
 
-    protected String executeMethodOk(HttpMethod method) throws HttpMethodException {
+    private String executeMethodOk(HttpMethod method) throws HttpMethodException {
         return executeMethodOk(method, true);
     }
 
-    protected String executeMethodOk(HttpMethod method, boolean reloginOn401) throws HttpMethodException {
+    private String executeMethodOk(HttpMethod method, boolean reloginOn401) throws HttpMethodException {
         return executeMethodOk(method, reloginOn401, 16);
     }
 
@@ -2561,6 +2550,7 @@ public class GdcRESTApiWrapper {
              * of response classes; which is mandated by RFC and extensively used in
              * GoodData API. Let us grok the classes ourselves. */
 
+//            TODO this if/else needs refactor
             /* 2xx success class */
             if (method.getStatusCode() == HttpStatus.SC_CREATED) {
                 return;
@@ -2571,14 +2561,12 @@ public class GdcRESTApiWrapper {
             } else if (method.getStatusCode() >= HttpStatus.SC_OK
                     && method.getStatusCode() < HttpStatus.SC_BAD_REQUEST) {
                 return;
-
                 /* 4xx user errors and
-            * 5xx backend trouble */
+//           TODO ? ->  * 5xx backend trouble */
             } else if (method.getStatusCode() == HttpStatus.SC_UNAUTHORIZED && reloginOn401) {
                 // refresh the temporary token
                 setTokenCookie();
                 executeMethodOkOnly(method, false, retries);
-                return;
             } else if (method.getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE && retries-- > 0
                     && method.getResponseHeader("Retry-After") != null) {
                 /* This is recommended by RFC 2616 and should probably be dealt with by the
@@ -2588,10 +2576,10 @@ public class GdcRESTApiWrapper {
                 l.debug(retries + " more retries");
                 try {
                     Thread.currentThread().sleep(Constants.RETRY_INTERVAL * timeout);
-                } catch (java.lang.InterruptedException e) {
+                } catch (java.lang.InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
                 executeMethodOkOnly(method, false, retries);
-                return;
             } else if (method.getStatusCode() == HttpStatus.SC_GONE) {
                 throw new GdcProjectAccessException("Invalid project.");
             } else if (method.getStatusCode() >= HttpStatus.SC_BAD_REQUEST
@@ -2618,7 +2606,7 @@ public class GdcRESTApiWrapper {
      * @param projectId project ID
      * @return SLI collection URI
      */
-    public String getSLIsUri(String projectId) {
+    private String getSLIsUri(String projectId) {
         return getProjectMdUrl(projectId) + DATA_INTERFACES_URI;
     }
 
@@ -2634,7 +2622,7 @@ public class GdcRESTApiWrapper {
     }
 
 
-    protected String getServerUrl() {
+    private String getServerUrl() {
         return config.getUrl();
     }
 
@@ -2643,7 +2631,7 @@ public class GdcRESTApiWrapper {
      *
      * @param projectId project ID
      */
-    protected String getProjectMdUrl(String projectId) {
+    private String getProjectMdUrl(String projectId) {
         return getServerUrl() + MD_URI + projectId;
     }
 
@@ -2652,7 +2640,7 @@ public class GdcRESTApiWrapper {
      *
      * @param projectId project ID
      */
-    protected String getProjectUrl(String projectId) {
+    private String getProjectUrl(String projectId) {
         return getServerUrl() + PROJECTS_URI + "/" + projectId;
     }
 
@@ -2665,8 +2653,7 @@ public class GdcRESTApiWrapper {
     public String getProjectIdFromUri(String projectUri) {
         String[] cmpnts = projectUri.split("/");
         if (cmpnts != null && cmpnts.length > 0) {
-            String id = cmpnts[cmpnts.length - 1];
-            return id;
+            return cmpnts[cmpnts.length - 1];
         } else
             throw new GdcRestApiException("Invalid project uri structure uri=" + projectUri);
     }
@@ -2677,7 +2664,7 @@ public class GdcRESTApiWrapper {
      * @param projectId project ID
      * @return the project delete URI
      */
-    public String getProjectDeleteUri(String projectId) {
+    private String getProjectDeleteUri(String projectId) {
         return PROJECTS_URI + "/" + projectId;
     }
 
@@ -2708,7 +2695,7 @@ public class GdcRESTApiWrapper {
      * @param eMail     invited user e-mail
      * @param message   invitation message
      */
-    public void inviteUser(String projectId, String eMail, String message, String role) {
+    private void inviteUser(String projectId, String eMail, String message, String role) {
         l.debug("Executing inviteUser projectId=" + projectId + " e-mail=" + eMail + " message=" + message);
         PostMethod invitePost = createPostMethod(getServerUrl() + getProjectDeleteUri(projectId) + INVITATION_URI);
         JSONObject inviteStructure = getInviteStructure(projectId, eMail, message, role);
@@ -2765,8 +2752,8 @@ public class GdcRESTApiWrapper {
      * @param identifiers MD object identifiers
      * @return map identifier:uri
      */
-    public Map<String, String> identifierToUri(String projectId, String[] identifiers) {
-        l.debug("Executing identifierToUri identifier=" + identifiers);
+    private Map<String, String> identifierToUri(String projectId, String[] identifiers) {
+        l.debug("Executing identifierToUri identifier=" + Arrays.toString(identifiers));
         Map<String, String> result = new HashMap<String, String>();
         PostMethod p = createPostMethod(getProjectMdUrl(projectId) + IDENTIFIER_URI);
         JSONObject is = getIdentifiersStructure(identifiers);
@@ -2786,8 +2773,8 @@ public class GdcRESTApiWrapper {
             }
 
         } catch (HttpMethodException ex) {
-            l.debug("Failed executing identifierToUri identifier=" + identifiers);
-            throw new GdcRestApiException("Failed executing identifierToUri identifier=" + identifiers, ex);
+            l.debug("Failed executing identifierToUri identifier=" + Arrays.toString(identifiers));
+            throw new GdcRestApiException("Failed executing identifierToUri identifier=" + Arrays.toString(identifiers), ex);
         } finally {
             p.releaseConnection();
         }
@@ -2804,9 +2791,7 @@ public class GdcRESTApiWrapper {
     private JSONObject getIdentifiersStructure(String[] identifiers) {
         JSONObject identifierToUri = new JSONObject();
         JSONArray ids = new JSONArray();
-        for (int i = 0; i < identifiers.length; i++) {
-            ids.add(identifiers[i]);
-        }
+        Collections.addAll(ids, identifiers);
         identifierToUri.put("identifierToUri", ids);
         return identifierToUri;
     }
@@ -2818,7 +2803,7 @@ public class GdcRESTApiWrapper {
      * @param objectUri object uri
      * @return the object to get
      */
-    public JSONObject getObjectByUri(String objectUri) {
+    private JSONObject getObjectByUri(String objectUri) {
         l.debug("Executing getObjectByUri uri=" + objectUri);
         HttpMethod req = createGetMethod(getServerUrl() + objectUri);
         try {
@@ -2842,10 +2827,9 @@ public class GdcRESTApiWrapper {
      * @param objectUri object uri
      * @return the object to get
      */
-    public MetadataObject getMetadataObject(String objectUri) {
+    private MetadataObject getMetadataObject(String objectUri) {
         l.debug("Executing getMetadataObject uri=" + objectUri);
-        MetadataObject o = new MetadataObject(getObjectByUri(objectUri));
-        return o;
+        return new MetadataObject(getObjectByUri(objectUri));
     }
 
     /**
@@ -2867,7 +2851,7 @@ public class GdcRESTApiWrapper {
      * @param identifier object identifier
      * @return the object to get
      */
-    public MetadataObject getMetadataObject(String projectId, String identifier) {
+    private MetadataObject getMetadataObject(String projectId, String identifier) {
         l.debug("Executing getObjectByIdentifier identifier=" + identifier);
         Map<String, String> uris = identifierToUri(projectId, new String[]{identifier});
         if (uris != null && uris.size() > 0) {
@@ -2969,7 +2953,7 @@ public class GdcRESTApiWrapper {
      * @param content   the new object content
      * @return the new object
      */
-    public JSONObject createMetadataObject(String projectId, JSON content) {
+    private JSONObject createMetadataObject(String projectId, JSON content) {
         l.debug("Executing createMetadataObject on project id=" + projectId + "content='" + content.toString() + "'");
         PostMethod req = createPostMethod(getProjectMdUrl(projectId) + OBJ_URI + "?createAndGet=true");
         try {
@@ -2977,8 +2961,7 @@ public class GdcRESTApiWrapper {
             InputStreamRequestEntity request = new InputStreamRequestEntity(new ByteArrayInputStream(str.getBytes("utf-8")));
             req.setRequestEntity(request);
             String resp = executeMethodOk(req);
-            JSONObject parsedResp = JSONObject.fromObject(resp);
-            return parsedResp;
+            return JSONObject.fromObject(resp);
         } catch (HttpMethodException ex) {
             l.debug("Failed executing createMetadataObject on project id=" + projectId + "content='" + content.toString() + "'");
             throw new GdcRestApiException("Failed executing createMetadataObject on project id=" + projectId + "content='" + content.toString() + "'", ex);
@@ -3010,7 +2993,7 @@ public class GdcRESTApiWrapper {
      * @param content the new object content
      * @return the new object
      */
-    public JSONObject modifyMetadataObject(String uri, JSON content) {
+    private JSONObject modifyMetadataObject(String uri, JSON content) {
         l.debug("Executing modifyMetadataObject on uri=" + uri + " content='" + content.toString() + "'");
         PostMethod req = createPostMethod(getServerUrl() + uri);
         try {
@@ -3018,8 +3001,7 @@ public class GdcRESTApiWrapper {
                     content.toString().getBytes("utf-8")));
             req.setRequestEntity(request);
             String resp = executeMethodOk(req);
-            JSONObject parsedResp = JSONObject.fromObject(resp);
-            return parsedResp;
+            return JSONObject.fromObject(resp);
         } catch (HttpMethodException ex) {
             l.debug("Failed executing modifyMetadataObject on uri=" + uri + " content='" + content.toString() + "'");
             throw new GdcRestApiException("Failed executing modifyMetadataObject on uri=" + uri + " content='" + content.toString() + "'", ex);
@@ -3049,7 +3031,7 @@ public class GdcRESTApiWrapper {
      * @param uri object uri
      * @return the new object
      */
-    public void deleteMetadataObject(String uri) {
+    private void deleteMetadataObject(String uri) {
         l.debug("Executing deleteMetadataObject on project uri=" + uri);
         DeleteMethod req = createDeleteMethod(getServerUrl() + uri);
         try {
@@ -3068,7 +3050,7 @@ public class GdcRESTApiWrapper {
      * @param pid project id
      * @return project's ETL mode
      */
-    public String getProjectEtlMode(String pid) {
+    private String getProjectEtlMode(String pid) {
         l.debug("Getting project etl status.");
         GetMethod req = createGetMethod(getProjectMdUrl(pid) + ETL_MODE_URI);
         try {
@@ -3097,7 +3079,7 @@ public class GdcRESTApiWrapper {
         }
     }
 
-    protected JSONObject getMigrationRequest(List<String> manifests) {
+    private JSONObject getMigrationRequest(List<String> manifests) {
         JSONObject etlMode = new JSONObject();
         etlMode.put("mode", "SLI");
         JSONArray mnfsts = new JSONArray();
@@ -3128,8 +3110,8 @@ public class GdcRESTApiWrapper {
                     l.debug("getTaskManStatus: Waiting for status");
                     try {
                         Thread.sleep(Constants.POLL_INTERVAL);
-                    } catch (InterruptedException ex) {
-                        // do nothing
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
                     }
                 }
             }
@@ -3190,8 +3172,8 @@ public class GdcRESTApiWrapper {
                     l.debug("getTaskManStatus: Waiting for status");
                     try {
                         Thread.sleep(Constants.POLL_INTERVAL);
-                    } catch (InterruptedException ex) {
-                        // do nothing
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
                     }
                 }
             }
@@ -3201,26 +3183,26 @@ public class GdcRESTApiWrapper {
                 String status = state.getString("status");
                 ArrayList<String> messages = new ArrayList<String>();
                 l.debug("TaskMan status=" + status);
-                if(state.containsKey("messages")) {
+                if (state.containsKey("messages")) {
                     JSONArray msgs = state.getJSONArray("messages");
-                    if(msgs != null && !msgs.isEmpty()) {
+                    if (msgs != null && !msgs.isEmpty()) {
                         for (Object msgo : msgs) {
-                            JSONObject msg = (JSONObject)msgo;
-                            String root = (String)msg.keys().next();
+                            JSONObject msg = (JSONObject) msgo;
+                            String root = (String) msg.keys().next();
                             JSONObject inner = msg.getJSONObject(root);
                             JSONArray prms = inner.getJSONArray("parameters");
                             String message = inner.getString("message");
-                            if(prms != null && !prms.isEmpty()) {
-                                for(Object prmo : prms) {
-                                    String prm = (String)prmo;
-                                    message = message.replaceFirst("\\%s",prm);
+                            if (prms != null && !prms.isEmpty()) {
+                                for (Object prmo : prms) {
+                                    String prm = (String) prmo;
+                                    message = message.replaceFirst("%s", prm);
                                 }
                             }
                             messages.add(message);
                         }
                     }
                 }
-                return new TaskmanStatus(status, (String[])messages.toArray(new String[]{}));
+                return new TaskmanStatus(status, messages.toArray(new String[]{}));
             } else {
                 l.debug("No wTaskStatus structure in the taskman status!");
                 throw new GdcRestApiException("No wTaskStatus structure in the taskman status!");
@@ -3247,8 +3229,7 @@ public class GdcRESTApiWrapper {
             try {
                 String resp = executeMethodOk(req);
                 JSONObject responseObject = JSONObject.fromObject(resp);
-                String taskLink = responseObject.getString("uri");
-                return taskLink;
+                return responseObject.getString("uri");
 
             } catch (HttpMethodException ex) {
                 l.debug("Migrating project to SLI failed.", ex);
@@ -3286,13 +3267,13 @@ public class GdcRESTApiWrapper {
 
     public static String getUserAgent() {
         Package pkg = Main.class.getPackage();
-        String clientVersion = pkg != null && pkg.getImplementationVersion() != null?pkg.getImplementationVersion():"UNKNOWN";
+        String clientVersion = pkg != null && pkg.getImplementationVersion() != null ? pkg.getImplementationVersion() : "UNKNOWN";
         return String.format("%s/%s", "GoodData Agent", clientVersion);
     }
 
     protected void finalize() throws Throwable {
         try {
-           // logout();
+//            TODO -> remove this ? // logout();
         } finally {
             super.finalize();
         }
@@ -3305,271 +3286,264 @@ public class GdcRESTApiWrapper {
      * @return
      */
     public Map<String, GdcUser> getUsers(String domain) {
-	Map<String, GdcUser> users = new HashMap<String, GdcUser>();
+        Map<String, GdcUser> users = new HashMap<String, GdcUser>();
 
-	String url = "/gdc/account/domains/" + domain + "/users";
-	JSONObject jsonObject = getObjectByUri(url);
-	if (jsonObject == null) {
-	    return users;
-	}
-	JSONObject accountSettings = jsonObject
-		.getJSONObject("accountSettings");
-	if (accountSettings == null) {
-	    return users;
-	}
-	JSONArray items = (JSONArray) accountSettings.get("items");
-	if (items == null) {
-	    return users;
-	}
-	for (Object item : items) {
-	    JSONObject itemJSON = JSONObject.fromObject(item);
-	    if (itemJSON == null) {
-		continue;
-	    }
-	    JSONObject accountSetting = itemJSON
-		    .getJSONObject("accountSetting");
-	    if (accountSetting == null) {
-		continue;
-	    }
-	    GdcUser user = new GdcUser();
-	    user.setLogin(accountSetting.getString("login"));
-	    user.setFirstName(accountSetting.getString("firstName"));
-	    user.setLastName(accountSetting.getString("lastName"));
-	    user.setCompanyName(accountSetting.getString("companyName"));
-	    user.setPosition(accountSetting.getString("position"));
-	    user.setCountry(accountSetting.getString("country"));
-	    user.setTimezone(accountSetting.getString("timezone"));
-	    user.setPhoneNumber(accountSetting.getString("phoneNumber"));
-	    user.setEmail(accountSetting.getString("email"));
-	    JSONObject links = accountSetting.getJSONObject("links");
-	    if (links == null)
-		throw new RuntimeException(
-			"The URL link for a user cannot be null: "
-				+ user.getLogin());
-	    String uri = links.getString("self");
-	    if (uri == null)
-		throw new RuntimeException("The URL for a user cannot be null: "
-			+ user.getLogin());
-	    user.setUri(uri);
-	    users.put(user.getLogin(), user);
-	}
-	return users;
+        String url = "/gdc/account/domains/" + domain + "/users";
+        JSONObject jsonObject = getObjectByUri(url);
+        if (jsonObject == null) {
+            return users;
+        }
+        JSONObject accountSettings = jsonObject
+                .getJSONObject("accountSettings");
+        if (accountSettings == null) {
+            return users;
+        }
+        JSONArray items = (JSONArray) accountSettings.get("items");
+        if (items == null) {
+            return users;
+        }
+        for (Object item : items) {
+            JSONObject itemJSON = JSONObject.fromObject(item);
+            if (itemJSON == null) {
+                continue;
+            }
+            JSONObject accountSetting = itemJSON
+                    .getJSONObject("accountSetting");
+            if (accountSetting == null) {
+                continue;
+            }
+            GdcUser user = new GdcUser();
+            user.setLogin(accountSetting.getString("login"));
+            user.setFirstName(accountSetting.getString("firstName"));
+            user.setLastName(accountSetting.getString("lastName"));
+            user.setCompanyName(accountSetting.getString("companyName"));
+            user.setPosition(accountSetting.getString("position"));
+            user.setCountry(accountSetting.getString("country"));
+            user.setTimezone(accountSetting.getString("timezone"));
+            user.setPhoneNumber(accountSetting.getString("phoneNumber"));
+            user.setEmail(accountSetting.getString("email"));
+            JSONObject links = accountSetting.getJSONObject("links");
+            if (links == null)
+                throw new RuntimeException(
+                        "The URL link for a user cannot be null: "
+                                + user.getLogin());
+            String uri = links.getString("self");
+            if (uri == null)
+                throw new RuntimeException("The URL for a user cannot be null: "
+                        + user.getLogin());
+            user.setUri(uri);
+            users.put(user.getLogin(), user);
+        }
+        return users;
     }
 
     public List<String> enumerateDimensions(String projectId) {
-	return enumerateResource(projectId, QUERY_DIMENSIONS);
+        return enumerateResource(projectId, QUERY_DIMENSIONS);
     }
 
     public List<String> enumerateDataSets(String projectId) {
-	return enumerateResource(projectId, QUERY_DATASETS);
+        return enumerateResource(projectId, QUERY_DATASETS);
     }
 
     public List<String> enumerateFolders(String projectId) {
-	return enumerateResource(projectId, QUERY_FOLDERS);
+        return enumerateResource(projectId, QUERY_FOLDERS);
     }
 
     public List<String> enumerateDashboards(String projectId) {
-	return enumerateResource(projectId, QUERY_PROJECTDASHBOARDS);
+        return enumerateResource(projectId, QUERY_PROJECTDASHBOARDS);
     }
 
     protected List<String> enumerateResource(String projectId, String resource) {
-	l.debug("Enumerating attributes for project id=" + projectId);
-	List<String> list = new ArrayList<String>();
-	String qUri = getProjectMdUrl(projectId) + QUERY_PREFIX + resource;
-	HttpMethod qGet = createGetMethod(qUri);
-	try {
-	    String qr = executeMethodOk(qGet);
-	    JSONObject q = JSONObject.fromObject(qr);
-	    if (q.isNullObject()) {
-		l.debug("Enumerating "+resource+" for project id="+projectId+" failed.");
-		throw new RuntimeException(
-			"Enumerating "+resource+" for project id="+projectId+" failed.");
-	    }
-	    JSONObject qry = q.getJSONObject("query");
-	    if (qry.isNullObject()) {
-		l.debug("Enumerating "+resource+" for project id="+projectId+" failed.");
-		throw new RuntimeException(
-			"Enumerating "+resource+" for project id="+projectId+" failed.");
-	    }
-	    JSONArray entries = qry.getJSONArray("entries");
-	    if (entries == null) {
-		l.debug("Enumerating "+resource+" for project id="+projectId+" failed.");
-		throw new RuntimeException(
-			"Enumerating "+resource+" for project id="+projectId+" failed.");
-	    }
-	    for (Object oentry : entries) {
-		JSONObject entry = (JSONObject) oentry;
-		list.add(entry.getString("link"));
-	    }
-	} finally {
-	    qGet.releaseConnection();
-	}
-	return list;
+        l.debug("Enumerating attributes for project id=" + projectId);
+        List<String> list = new ArrayList<String>();
+        String qUri = getProjectMdUrl(projectId) + QUERY_PREFIX + resource;
+        HttpMethod qGet = createGetMethod(qUri);
+        try {
+            String qr = executeMethodOk(qGet);
+            JSONObject q = JSONObject.fromObject(qr);
+            if (q.isNullObject()) {
+                l.debug("Enumerating " + resource + " for project id=" + projectId + " failed.");
+                throw new RuntimeException(
+                        "Enumerating " + resource + " for project id=" + projectId + " failed.");
+            }
+            JSONObject qry = q.getJSONObject("query");
+            if (qry.isNullObject()) {
+                l.debug("Enumerating " + resource + " for project id=" + projectId + " failed.");
+                throw new RuntimeException(
+                        "Enumerating " + resource + " for project id=" + projectId + " failed.");
+            }
+            JSONArray entries = qry.getJSONArray("entries");
+            if (entries == null) {
+                l.debug("Enumerating " + resource + " for project id=" + projectId + " failed.");
+                throw new RuntimeException(
+                        "Enumerating " + resource + " for project id=" + projectId + " failed.");
+            }
+            for (Object oentry : entries) {
+                JSONObject entry = (JSONObject) oentry;
+                list.add(entry.getString("link"));
+            }
+        } finally {
+            qGet.releaseConnection();
+        }
+        return list;
     }
 
     public ProjectExportResult exportMDByUrl(String projectId, List<String> urls) {
-	l.debug("Exporting metadata objects with URls " + urls
-		+ " from project " + projectId);
-	PostMethod req = createPostMethod(getProjectMdUrl(projectId)
-		+ PROJECT_PARTIAL_EXPORT_URI);
-	JSONObject param = getMDExportStructureStrings(projectId, urls);
-	InputStreamRequestEntity request = new InputStreamRequestEntity(
-		new ByteArrayInputStream(param.toString().getBytes(
-			Charset.forName("UTF-8"))));
-	req.setRequestEntity(request);
-	ProjectExportResult result = null;
-	try {
-	    String response = executeMethodOk(req);
-	    result = new ProjectExportResult();
-	    JSONObject responseObject = JSONObject.fromObject(response);
-	    JSONObject exportArtifact = responseObject
-		    .getJSONObject("partialMDArtifact");
-	    JSONObject status = exportArtifact.getJSONObject("status");
-	    result.setTaskUri(status.getString("uri"));
-	    result.setExportToken(exportArtifact.getString("token"));
-	    return result;
-	} catch (HttpMethodException ex) {
-	    l.debug("Error exporting metadata objects with URls " + urls
-		    + " from project " + projectId, ex);
-	    throw new GdcRestApiException(
-		    "Error exporting metadata objects with URls " + urls
-			    + " from project " + projectId, ex);
-	} finally {
-	    req.releaseConnection();
-	}
+        l.debug("Exporting metadata objects with URls " + urls
+                + " from project " + projectId);
+        PostMethod req = createPostMethod(getProjectMdUrl(projectId)
+                + PROJECT_PARTIAL_EXPORT_URI);
+        JSONObject param = getMDExportStructureStrings(projectId, urls);
+        InputStreamRequestEntity request = new InputStreamRequestEntity(
+                new ByteArrayInputStream(param.toString().getBytes(
+                        Charset.forName("UTF-8"))));
+        req.setRequestEntity(request);
+        ProjectExportResult result;
+        try {
+            String response = executeMethodOk(req);
+            result = new ProjectExportResult();
+            JSONObject responseObject = JSONObject.fromObject(response);
+            JSONObject exportArtifact = responseObject
+                    .getJSONObject("partialMDArtifact");
+            JSONObject status = exportArtifact.getJSONObject("status");
+            result.setTaskUri(status.getString("uri"));
+            result.setExportToken(exportArtifact.getString("token"));
+            return result;
+        } catch (HttpMethodException ex) {
+            l.debug("Error exporting metadata objects with URls " + urls
+                    + " from project " + projectId, ex);
+            throw new GdcRestApiException(
+                    "Error exporting metadata objects with URls " + urls
+                            + " from project " + projectId, ex);
+        } finally {
+            req.releaseConnection();
+        }
     }
 
     protected JSONObject getMDExportStructureStrings(String projectId,
-	    List<String> urls) {
-	JSONObject param = new JSONObject();
-	JSONObject partialMDExport = new JSONObject();
-	JSONArray uris = new JSONArray();
-	for (String url : urls) {
-	    uris.add(url);
-	}
-	partialMDExport.put("uris", uris);
-	param.put("partialMDExport", partialMDExport);
-	return param;
+                                                     List<String> urls) {
+        JSONObject param = new JSONObject();
+        JSONObject partialMDExport = new JSONObject();
+        JSONArray uris = new JSONArray();
+        uris.addAll(urls);
+        partialMDExport.put("uris", uris);
+        param.put("partialMDExport", partialMDExport);
+        return param;
     }
 
     public NamePasswordConfiguration getNamePasswordConfiguration() {
-	return config;
+        return config;
     }
 
     /**
      * Checks if report copying is finished. Workaround implementation due to
      * wrong handling of status code.
      *
-     * @param link
-     *            the link returned from the start loading
+     * @param link the link returned from the start loading
      * @return the loading status
      */
     public String getCopyStatus(String link) {
-	l.debug("Getting Cloning Status status uri=" + link);
-	HttpMethod ptm = createGetMethod(getServerUrl() + link);
+        l.debug("Getting Cloning Status status uri=" + link);
+        HttpMethod ptm = createGetMethod(getServerUrl() + link);
 
-	try {
-	    String response = executeMethodOk(ptm);
-	    if (response != null && !response.isEmpty()) {
-		JSONObject task = JSONObject.fromObject(response);
-		JSONObject state = task.getJSONObject("taskState");
-		if (state != null && !state.isNullObject() && !state.isEmpty()) {
-		    String status = state.getString("status");
-		    l.debug("TaskMan status=" + status);
-		    return status;
-		} else {
-		    l.debug("No wTaskStatus structure in the migration status!");
-		    throw new GdcRestApiException(
-			    "No wTaskStatus structure in the migration status!");
-		}
-	    }
-	    return "RUNNING";
-	} catch (HttpMethodException e) {
-	    // workaround implementation due to wrong handling (at least for
-	    // this status)
-	    if (e instanceof HttpMethodNotFinishedYetException
-		    || (e.getCause() != null && e.getCause() instanceof HttpMethodNotFinishedYetException)) {
-		l.debug("getTaskManStatus: Waiting for status");
-		return "RUNNING";
-	    }
-	    throw e;
-	} finally {
-	    ptm.releaseConnection();
-	}
+        try {
+            String response = executeMethodOk(ptm);
+            if (response != null && !response.isEmpty()) {
+                JSONObject task = JSONObject.fromObject(response);
+                JSONObject state = task.getJSONObject("taskState");
+                if (state != null && !state.isNullObject() && !state.isEmpty()) {
+                    String status = state.getString("status");
+                    l.debug("TaskMan status=" + status);
+                    return status;
+                } else {
+                    l.debug("No wTaskStatus structure in the migration status!");
+                    throw new GdcRestApiException(
+                            "No wTaskStatus structure in the migration status!");
+                }
+            }
+            return "RUNNING";
+        } catch (HttpMethodException e) {
+            // workaround implementation due to wrong handling (at least for
+            // this status)
+            if (e instanceof HttpMethodNotFinishedYetException
+                    || (e.getCause() != null && e.getCause() instanceof HttpMethodNotFinishedYetException)) {
+                l.debug("getTaskManStatus: Waiting for status");
+                return "RUNNING";
+            }
+            throw e;
+        } finally {
+            ptm.releaseConnection();
+        }
     }
 
 
     /**
      * Retrieves the project info by the project's name
      *
-     * @param name
-     *            the project name
+     * @param name the project name
      * @return the GoodDataProjectInfo populated with the project's information
      * @throws HttpMethodException
      * @throws GdcProjectAccessException
      */
     @Deprecated
     public Project getProjectByName(String name) throws HttpMethodException,
-	    GdcProjectAccessException {
-	l.debug("Getting project by name=" + name);
-	for (Iterator<JSONObject> linksIter = getProjectsLinks(); linksIter
-		.hasNext();) {
-	    JSONObject link = linksIter.next();
-	    String cat = link.getString("category");
-	    if (!"project".equalsIgnoreCase(cat)) {
-		continue;
-	    }
-	    String title = link.getString("title");
-	    if (title.equals(name)) {
-		Project proj = new Project(link);
-		l.debug("Got project by name=" + name);
-		return proj;
-	    }
-	}
-	l.debug("The project name=" + name + " doesn't exists.");
-	throw new GdcProjectAccessException("The project name=" + name
-		+ " doesn't exists.");
+            GdcProjectAccessException {
+        l.debug("Getting project by name=" + name);
+        for (Iterator<JSONObject> linksIter = getProjectsLinks(); linksIter
+                .hasNext(); ) {
+            JSONObject link = linksIter.next();
+            String cat = link.getString("category");
+            if (!"project".equalsIgnoreCase(cat)) {
+                continue;
+            }
+            String title = link.getString("title");
+            if (title.equals(name)) {
+                Project proj = new Project(link);
+                l.debug("Got project by name=" + name);
+                return proj;
+            }
+        }
+        l.debug("The project name=" + name + " doesn't exists.");
+        throw new GdcProjectAccessException("The project name=" + name
+                + " doesn't exists.");
     }
 
     /**
      * Returns the existing projects links
      *
      * @return accessible projects links
-     * @throws com.gooddata.exception.HttpMethodException
+     * @throws HttpMethodException
      */
     @Deprecated
     @SuppressWarnings("unchecked")
     private Iterator<JSONObject> getProjectsLinks() throws HttpMethodException {
-	l.debug("Getting project links.");
-	HttpMethod req = createGetMethod(getServerUrl() + MD_URI);
-	try {
-	    String resp = executeMethodOk(req);
-	    JSONObject parsedResp = JSONObject.fromObject(resp);
-	    JSONObject about = parsedResp.getJSONObject("about");
-	    JSONArray links = about.getJSONArray("links");
-	    l.debug("Got project links " + links);
-	    return links.iterator();
-	} finally {
-	    req.releaseConnection();
-	}
+        l.debug("Getting project links.");
+        HttpMethod req = createGetMethod(getServerUrl() + MD_URI);
+        try {
+            String resp = executeMethodOk(req);
+            JSONObject parsedResp = JSONObject.fromObject(resp);
+            JSONObject about = parsedResp.getJSONObject("about");
+            JSONArray links = about.getJSONArray("links");
+            l.debug("Got project links " + links);
+            return links.iterator();
+        } finally {
+            req.releaseConnection();
+        }
     }
 
     /**
      * Create a new GoodData project
      *
-     * @param name
-     *            project name
-     * @param desc
-     *            project description
-     * @param templateUri
-     *            project template uri
+     * @param name        project name
+     * @param desc        project description
+     * @param templateUri project template uri
      * @return the project Id
      * @throws GdcRestApiException
      */
     @Deprecated
     public String createProject(String name, String desc, String templateUri)
-	    throws GdcRestApiException {
-	    return this.createProject(name, desc, templateUri, null, null);
+            throws GdcRestApiException {
+        return this.createProject(name, desc, templateUri, null, null);
     }
 
     /**
@@ -3577,25 +3551,25 @@ public class GdcRESTApiWrapper {
      * projects
      *
      * @return the List of GoodDataProjectInfo structures for the accessible
-     *         projects
+     * projects
      * @throws HttpMethodException
      */
     @Deprecated
     public List<Project> listProjects() throws HttpMethodException {
-    l.debug("Listing projects.");
-    List<Project> list = new ArrayList<Project>();
-    for (Iterator<JSONObject> linksIter = getProjectsLinks(); linksIter
-        .hasNext();) {
-        JSONObject link = linksIter.next();
-        String cat = link.getString("category");
-        if (!"project".equalsIgnoreCase(cat)) {
-        continue;
+        l.debug("Listing projects.");
+        List<Project> list = new ArrayList<Project>();
+        for (Iterator<JSONObject> linksIter = getProjectsLinks(); linksIter
+                .hasNext(); ) {
+            JSONObject link = linksIter.next();
+            String cat = link.getString("category");
+            if (!"project".equalsIgnoreCase(cat)) {
+                continue;
+            }
+            Project proj = new Project(link);
+            list.add(proj);
         }
-        Project proj = new Project(link);
-        list.add(proj);
-    }
-    l.debug("Found projects " + list);
-    return list;
+        l.debug("Found projects " + list);
+        return list;
     }
 
     /**
@@ -3606,12 +3580,12 @@ public class GdcRESTApiWrapper {
      */
     @Deprecated
     public String getReportDefinition(String reportUri) {
-        l.debug( "Getting report definition for report uri=" + reportUri );
+        l.debug("Getting report definition for report uri=" + reportUri);
         String qUri = getServerUrl() + reportUri;
-        HttpMethod qGet = createGetMethod( qUri );
+        HttpMethod qGet = createGetMethod(qUri);
         try {
-            String qr = executeMethodOk( qGet );
-            JSONObject q = JSONObject.fromObject( qr );
+            String qr = executeMethodOk(qGet);
+            JSONObject q = JSONObject.fromObject(qr);
             if (q.isNullObject()) {
                 l.debug("Error getting report definition for report uri=" + reportUri);
                 throw new GdcProjectAccessException("Error getting report definition for report uri=" + reportUri);
@@ -3632,11 +3606,8 @@ public class GdcRESTApiWrapper {
                 throw new GdcProjectAccessException("Error getting report definition for report uri=" + reportUri);
             }
             if (definitions.size() > 0) {
-                String lastDefUri = definitions.getString(definitions.size() - 1);
-                qUri = getServerUrl() + lastDefUri;
-                return lastDefUri;
-            }
-            else {
+                return definitions.getString(definitions.size() - 1);
+            } else {
                 l.debug("Error getting report definition for report uri=" + reportUri);
                 throw new GdcProjectAccessException("Error getting report definition for report uri=" + reportUri);
             }
@@ -3647,19 +3618,22 @@ public class GdcRESTApiWrapper {
     }
 
     public static class GraphExecutionResult {
-    	public final static String OK = "OK";
-    	private final String status;
-    	private final String logUrl;
-    	private GraphExecutionResult(final String status, final String logUrl) {
-    		this.status = status;
-    		this.logUrl = logUrl;
-    	}
-		public String getStatus() {
-			return status;
-		}
-		public String getLogUrl() {
-			return logUrl;
-		}
+        public final static String OK = "OK";
+        private final String status;
+        private final String logUrl;
+
+        private GraphExecutionResult(final String status, final String logUrl) {
+            this.status = status;
+            this.logUrl = logUrl;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public String getLogUrl() {
+            return logUrl;
+        }
     }
 }
 

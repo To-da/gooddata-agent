@@ -56,9 +56,9 @@ import net.sf.json.JSONObject;
  */
 public class Project {
 
-    private String link;
-    private String id;
-    private String title;
+    private final String link;
+    private final String id;
+    private final String title;
 
     /**
      * Constructs the GoodData project from the JSON structure

@@ -75,6 +75,7 @@ public class CollectorUtils {
     }
 
     /**
+     * TODO fix this method + description
      * Stolen from {@link com.gooddata.restapi.upload.impl.AbstractUploader}
      */
     private static void copyFileToZip(File csvFile, ZipOutputStream out) throws IOException {

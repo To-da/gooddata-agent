@@ -63,6 +63,7 @@
 	</dependencies>
 	<build>
 		<plugins>
+			<!--TODO check licence plugion-->
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>

@@ -23,7 +23,7 @@
 
 package com.gooddata.agent;
 
-import static java.lang.String.format;
+import org.apache.commons.lang.StringUtils;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import static java.lang.String.format;
 
 public class Configuration {
 	public static final String JDBC_PASSWORD = "jdbc.password";
@@ -126,12 +126,12 @@ public class Configuration {
 	 */
 	public static final String DEFAULT_PARAM_REPORTS = "gdc_agent_reports";
 
-	private Map<String,Exception> errors = new HashMap<String, Exception>();
-	private Map<String,String[]> ALL_OR_NONE = new HashMap<String, String[]>(){{
+	private final Map<String,Exception> errors = new HashMap<String, Exception>();
+	private final Map<String,String[]> ALL_OR_NONE = new HashMap<String, String[]>(){{
 		put("gdc.etl.*", new String[] { "gdc.etl.process_url", "gdc.etl.graph" });
 		put("jdbc.*", new String[] { JDBC_DRIVER_PATH, JDBC_DRIVER, JDBC_USERNAME, JDBC_URL });
 	}};
-	private String[][] ALTERNATIVES = new String[][] {
+	private final String[][] ALTERNATIVES = new String[][] {
 		new String[] { "gdc.upload_archive", "gdc.upload_manifest" }
 	};
 
@@ -576,8 +576,8 @@ public class Configuration {
    }
 
    public static class InputConfiguration {
-	   Properties props;
-	   Properties defaults;
+	   final Properties props;
+	   final Properties defaults;
 	   InputConfiguration(Properties props, Properties defaults) {
 	      this.props = props;
 	      this.defaults = defaults;

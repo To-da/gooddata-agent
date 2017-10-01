@@ -46,12 +46,11 @@
 
 package com.gooddata.agent.api.model;
 
-import java.util.List;
-
+import com.gooddata.agent.util.Constants;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-import com.gooddata.agent.util.Constants;
+import java.util.List;
 
 /**
  * GoodData Data Loading Interface (SLI)

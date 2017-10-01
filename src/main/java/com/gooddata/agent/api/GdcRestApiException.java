@@ -54,8 +54,7 @@ package com.gooddata.agent.api;
 /**
  * @author jiri.zaloudek
  */
-public class GdcRestApiException extends RuntimeException  {
-
+public class GdcRestApiException extends RuntimeException {
 
     /**
      * Constructs an instance of <code>GdcRestApiExecption</code> with the specified detail message.
@@ -75,24 +74,8 @@ public class GdcRestApiException extends RuntimeException  {
     }
 
     @Override
-    public String getLocalizedMessage() {
-        // TODO Auto-generated method stub
-        return super.getLocalizedMessage();
-    }
-
-
-    @Override
     public String getMessage() {
         // TODO Auto-generated method stub
         return super.getMessage();
     }
-
-
-    @Override
-    public String toString() {
-        // TODO Auto-generated method stub
-        return super.toString();
-    }
-
-
 }

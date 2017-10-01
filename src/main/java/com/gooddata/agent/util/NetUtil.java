@@ -61,7 +61,7 @@ import java.util.List;
  */
 public class NetUtil {
 
-    private static Logger l = Logger.getLogger(NetUtil.class);
+    private static final Logger l = Logger.getLogger(NetUtil.class);
 
     public static void configureHttpProxy(HttpClient client) {
         final String proxyHost = System.getProperty("http.proxyHost");
